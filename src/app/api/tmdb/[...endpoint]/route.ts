@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function getTmdbAuth(token: string): { headers: Record<string, string>; apiKey?: string } {
+  const cleanToken = token.trim().replace(/^Bearer\s+/i, "");
+  const isReadAccessToken = cleanToken.startsWith("eyJ") || cleanToken.split(".").length === 3;
+
+  return isReadAccessToken
+    ? { headers: { Authorization: `Bearer ${cleanToken}`, "Content-Type": "application/json" }, apiKey: undefined }
+    : { headers: { "Content-Type": "application/json" }, apiKey: cleanToken };
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ endpoint: string[] }> }
@@ -12,14 +21,15 @@ export async function GET(
   }
 
   const path = endpoint.join("/");
-  const searchParams = req.nextUrl.searchParams.toString();
+  const auth = getTmdbAuth(apiKey);
+  const searchParams = new URLSearchParams(req.nextUrl.searchParams);
+  if (auth.apiKey) {
+    searchParams.set("api_key", auth.apiKey);
+  }
   const url = `https://api.themoviedb.org/3/${path}${searchParams ? `?${searchParams}` : ""}`;
 
   const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: auth.headers,
     next: { revalidate: 3600 },
   });
 

@@ -20,6 +20,15 @@ function buildUrl(base: string, path: string, params?: Record<string, string>) {
   return `${base}${path}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 }
 
+function getTmdbAuth(token: string): { headers: Record<string, string>; params?: Record<string, string> } {
+  const cleanToken = token.trim().replace(/^Bearer\s+/i, "");
+  const isReadAccessToken = cleanToken.startsWith("eyJ") || cleanToken.split(".").length === 3;
+
+  return isReadAccessToken
+    ? { headers: { Authorization: `Bearer ${cleanToken}`, accept: "application/json" }, params: undefined }
+    : { headers: { accept: "application/json" }, params: { api_key: cleanToken } };
+}
+
 function emptyPaginatedResponse<T>(): TMDBPaginatedResponse<T> {
   return {
     page: 1,
@@ -50,11 +59,9 @@ async function tmdbFetch<T>(path: string, params?: Record<string, string>, reval
       throw new Error("TMDB_API_KEY not configured");
     }
 
-    const res = await fetch(buildUrl(TMDB_API_BASE, path, params), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        accept: "application/json",
-      },
+    const auth = getTmdbAuth(token);
+    const res = await fetch(buildUrl(TMDB_API_BASE, path, { ...params, ...auth.params }), {
+      headers: auth.headers,
       next: { revalidate },
     });
 
