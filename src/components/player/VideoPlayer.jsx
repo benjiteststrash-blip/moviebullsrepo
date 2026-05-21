@@ -60,6 +60,7 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
               src={playerUrl}
               title={`${type === 'movie' ? 'Movie' : 'Episode'} player via ${source.name}`}
               className="absolute inset-0 h-full w-full"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-presentation allow-popups"
               allowFullScreen
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               referrerPolicy="origin"

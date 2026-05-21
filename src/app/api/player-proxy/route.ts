@@ -22,7 +22,7 @@ function failedSourceResponse(url: string, details: string) {
     </style>
   </head>
   <body>
-    <p>Trying another source...</p>
+    <p>Player source unavailable. Please refresh or try again later.</p>
     <script>
       window.parent.postMessage({
         type: "player-source-failed",
@@ -47,6 +47,19 @@ function escapeHtmlAttribute(value: string) {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function sanitizeSandboxTokens(value: string) {
+  return value
+    .split(/\s+/)
+    .filter((token) => {
+      const normalized = token.trim().toLowerCase();
+      return normalized &&
+        normalized !== "allow-top-navigation" &&
+        normalized !== "allow-top-navigation-by-user-activation" &&
+        normalized !== "allow-popups-to-escape-sandbox";
+    })
+    .join(" ");
 }
 
 function buildBlockerScript(providerHost: string) {
@@ -84,7 +97,7 @@ function buildBlockerScript(providerHost: string) {
     'bslinks.site','cutlinks.net','shorte.st','ouo.io','za.gl','fc.lc',
     'shrinkearn.com','adbull.me','adrinolinks.com','linkvertise.com',
     'intellipopup.com','adsco.re','histats.com','sstatic1.histats.com',
-    's10.histats.com','cloudnestra.com','llvpn.com','anymanga.com',
+    's10.histats.com','cloudnestra.com','llvpn.com','anymanga.com','vidsrc.sbs',
     'adserver.com','adserver.ad','ads.trafficjunky.com','cdn.adsafeprotected.com',
     'cdn3.adsafeprotected.com','cdn4.adsafeprotected.com','adnxs.com',
     'cdn.viglink.com','pixel.quantserve.com','scorecardresearch.com',
@@ -462,6 +475,13 @@ function buildBlockerScript(providerHost: string) {
       var val = textOf(value);
       var tag = this.tagName ? this.tagName.toUpperCase() : '';
 
+      if (attr === 'sandbox') {
+        val = val.replace(/\\ballow-top-navigation(?:-by-user-activation)?\\b/gi, '')
+          .replace(/\\ballow-popups-to-escape-sandbox\\b/gi, '')
+          .replace(/\\s+/g, ' ')
+          .trim();
+        return originalSetAttribute.call(this, name, val);
+      }
       if (attr === 'src' && /^(VIDEO|SOURCE|AUDIO|TRACK)$/i.test(tag)) {
         return originalSetAttribute.apply(this, arguments);
       }
@@ -669,6 +689,18 @@ export async function GET(req: NextRequest) {
     let html = await res.text();
 
     html = html.replace(/<meta[^>]+http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, "");
+    html = html.replace(
+      /\bsandbox=(["'])([^"']*)\1/gi,
+      (_match, quote: string, value: string) => `sandbox=${quote}${sanitizeSandboxTokens(value)}${quote}`
+    );
+    html = html.replace(
+      /(setAttribute\(\s*["']sandbox["']\s*,\s*["'])([^"']*)(["']\s*\))/gi,
+      (_match, before: string, value: string, after: string) => `${before}${sanitizeSandboxTokens(value)}${after}`
+    );
+    html = html.replace(
+      /function\s+vzKill\s*\(\s*reason\s*\)\s*\{/g,
+      "function vzKill(reason){if(reason==='devtools')return;"
+    );
     html = html.replace(
       /<script[^>]+src=["'][^"']*(?:googlesyndication|doubleclick|pagead2|adsbygoogle|propellerads|popads|popcash|monetag|hilltopads|exoclick|juicyads|adsterra|taboola|outbrain|revcontent)[^"']*["'][^>]*>[\s\S]*?<\/script>/gi,
       ""

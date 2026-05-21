@@ -16,11 +16,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <MonetagTag />
+      </head>
       <body className="antialiased">
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />
-        <MonetagTag />
       </body>
     </html>
   );

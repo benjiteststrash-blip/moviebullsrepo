@@ -1,14 +1,13 @@
-import Script from "next/script";
-
-const MONETAG_DOMAIN = "5gvci.com";
-const MONETAG_ZONE_ID = "11035219";
+const MONETAG_SCRIPT_SRC = "https://quge5.com/88/tag.min.js";
+const MONETAG_DATA_ZONE = "241703";
 
 export function MonetagTag() {
   return (
-    <Script
+    <script
       id="monetag-multitag"
-      src={`https://${MONETAG_DOMAIN}/act/files/tag.min.js?z=${MONETAG_ZONE_ID}`}
-      strategy="afterInteractive"
+      src={MONETAG_SCRIPT_SRC}
+      async
+      data-zone={MONETAG_DATA_ZONE}
       data-cfasync="false"
     />
   );
