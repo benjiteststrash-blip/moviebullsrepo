@@ -41,6 +41,58 @@ function failedSourceResponse(url: string, details: string) {
   });
 }
 
+function browserFallbackResponse(url: string, details: string) {
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body, iframe {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #000;
+        overflow: hidden;
+      }
+      .fallback-note {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        z-index: 2;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.65);
+        color: rgba(255, 255, 255, 0.72);
+        font: 12px Arial, sans-serif;
+        padding: 6px 10px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      src="${escapeHtmlAttribute(url)}"
+      title="Fallback player"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-presentation allow-popups"
+      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      allowfullscreen
+      referrerpolicy="origin"
+    ></iframe>
+    <div class="fallback-note">Protected browser fallback</div>
+    <script>
+      console.info("Player proxy fallback:", ${JSON.stringify(details)});
+    </script>
+  </body>
+</html>`;
+
+  return new NextResponse(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 function escapeHtmlAttribute(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -683,6 +735,9 @@ export async function GET(req: NextRequest) {
     });
 
     if (!res.ok) {
+      if (res.status === 403 || res.status === 429) {
+        return browserFallbackResponse(url, `Provider returned ${res.status} ${res.statusText}`);
+      }
       return failedSourceResponse(url, `Provider returned ${res.status} ${res.statusText}`);
     }
 
@@ -763,6 +818,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("player-proxy error:", err);
-    return failedSourceResponse(url, String(err));
+    return browserFallbackResponse(url, String(err));
   }
 }
