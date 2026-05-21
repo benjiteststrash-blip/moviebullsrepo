@@ -65,7 +65,7 @@ export default async function HomePage() {
           </p>
         </section>
       )}
-      <div className="relative z-10 -mt-32">
+      <div className="relative z-10 -mt-14 sm:-mt-20">
         <MovieRow title="Trending Movies" items={trendingMovies} type="movie" />
         <MovieRow title="Trending TV Shows" items={trendingTV} type="tv" />
         <section className="mb-8 px-4 sm:px-6">

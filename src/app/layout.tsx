@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { AdPopunder } from "@/components/ads/AdPopunder";
+import { MonetagTag } from "@/components/ads/MonetagTag";
 
 export const metadata: Metadata = {
   title: "Moviebulls - Watch Movies & TV Shows",
@@ -20,7 +20,7 @@ export default function RootLayout({
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />
-        <AdPopunder />
+        <MonetagTag />
       </body>
     </html>
   );

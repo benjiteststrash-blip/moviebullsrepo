@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { fetchSeasonDetails, fetchTVDetails } from "@/lib/tmdb";
-import { PlayerModal } from "@/components/player/PlayerModal";
+import { VideoPlayer } from "@/components/player/VideoPlayer";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { getStillUrl, formatDate } from "@/lib/utils";
 import { EpisodeNavigation } from "./EpisodeNavigation";
@@ -46,7 +46,7 @@ export default async function EpisodePage({
       <AdBanner variant="leaderboard" />
 
       <div className="mt-6">
-        <PlayerModal tmdbId={tvId} type="tv" season={seasonNum} episode={episodeNum} />
+        <VideoPlayer tmdb={tvId} type="tv" season={seasonNum} episode={episodeNum} title={`${tv.name} S${seasonNum}E${episodeNum}`} />
       </div>
 
       <AdBanner variant="rectangle" />

@@ -15,7 +15,7 @@ export function HeroSection({ movie }: HeroSectionProps) {
   const rating = formatVoteAverage(movie.vote_average);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className="relative h-screen min-h-[640px] w-full overflow-hidden">
       {backdrop && (
         <Image
           src={backdrop}
@@ -28,8 +28,8 @@ export function HeroSection({ movie }: HeroSectionProps) {
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-12 max-w-3xl">
-        <h1 className="font-[family-name:var(--font-syne)] text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-tight mb-4">
+      <div className="absolute bottom-24 left-0 right-0 max-w-3xl p-6 sm:bottom-28 sm:p-12 lg:bottom-32">
+        <h1 className="mb-4 font-[family-name:var(--font-syne)] text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl">
           {movie.title}
         </h1>
         {movie.tagline && (
@@ -45,7 +45,7 @@ export function HeroSection({ movie }: HeroSectionProps) {
             </span>
           ))}
         </div>
-        <p className="text-sm sm:text-base text-gray-300 line-clamp-3 mb-6 max-w-xl">
+        <p className="mb-6 line-clamp-2 max-w-xl text-sm text-gray-300 sm:text-base md:line-clamp-3">
           {movie.overview}
         </p>
         <div className="flex items-center gap-4">

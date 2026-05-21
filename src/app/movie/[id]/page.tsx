@@ -2,7 +2,7 @@ import Image from "next/image";
 import { fetchMovieDetails } from "@/lib/tmdb";
 import { getPosterUrl, getBackdropUrl, getYear, formatRuntime, formatVoteAverage } from "@/lib/utils";
 import { MovieCard } from "@/components/shared/MovieCard";
-import { PlayerModal } from "@/components/player/PlayerModal";
+import { VideoPlayer } from "@/components/player/VideoPlayer";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { WatchlistButton } from "@/components/shared/WatchlistButton";
 import { RecentlyViewedRecorder } from "@/components/shared/RecentlyViewedRecorder";
@@ -126,7 +126,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
 
         <div className="mt-8">
           <h2 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white mb-4">Watch Now</h2>
-          <PlayerModal tmdbId={movie.id} type="movie" />
+          <VideoPlayer tmdb={movie.id} type="movie" title={movie.title} />
         </div>
 
         <div className="mt-8">
