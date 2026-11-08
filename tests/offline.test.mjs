@@ -138,3 +138,28 @@ test('offline worker serves saved bytes/ranges without a network and keeps video
   assert.equal((await request('bytes=0-1,3-4')).status, 416);
   assert.equal((await request(undefined, url.replace('part-0', 'part-missing'))).status, 404);
 });
+
+test('captures media playlists when the provider keeps HLS private and reannounces after playing', () => {
+  const sent = [];
+  const listeners = {};
+  const events = {};
+  class Xhr {
+    open() { return 'original'; }
+    addEventListener(type, handler) { this[type] = handler; }
+  }
+  const video = { currentSrc: 'blob:media-source', addEventListener(type, handler) { events[type] = handler; } };
+  const context = { window: { XMLHttpRequest: Xhr }, location: { href: 'https://player.example/' }, URL, parent: { postMessage(data) { sent.push(data); } }, document: { addEventListener(type, handler) { listeners[type] = handler; }, querySelector() { return video; } } };
+  vm.runInNewContext(offlineBridge('https://app.example'), context);
+  listeners.DOMContentLoaded();
+  const xhr = new Xhr();
+  assert.equal(xhr.open('GET', 'https://media.example/video.m3u8'), 'original');
+  xhr.responseType = 'text';
+  xhr.responseText = playlist;
+  xhr.responseURL = 'https://media.example/video.m3u8';
+  xhr.load();
+  assert.equal(sent.at(-1).url, xhr.responseURL);
+  const before = sent.length;
+  events.playing();
+  assert.equal(sent.length, before + 1);
+  assert.equal(sent.at(-1).url, xhr.responseURL);
+});
