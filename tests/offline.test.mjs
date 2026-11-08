@@ -163,3 +163,11 @@ test('captures media playlists when the provider keeps HLS private and reannounc
   assert.equal(sent.length, before + 1);
   assert.equal(sent.at(-1).url, xhr.responseURL);
 });
+
+test('injected browser script remains self-contained after the deployment bundler adds name helpers', async () => {
+  const { build } = await import('esbuild');
+  const bundle = await build({ entryPoints: [new URL('../player/offline-bridge.mjs', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')], bundle: true, format: 'esm', keepNames: true, write: false });
+  const deployed = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+  const context = { window: {}, location: { href: 'https://player.example/' }, URL, parent: { postMessage() {} }, document: { addEventListener() {}, querySelector() { return null; } } };
+  assert.doesNotThrow(() => vm.runInNewContext(deployed.offlineBridge('https://app.example'), context));
+});

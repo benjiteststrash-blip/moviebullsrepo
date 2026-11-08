@@ -1,8 +1,7 @@
 export function offlineBridge(appOrigin) {
-  return `(${installOfflineBridge.toString()})(${JSON.stringify(appOrigin)});`;
-}
-
-function installOfflineBridge(appOrigin) {
+  // Keep injected browser code literal: bundling function.toString() can introduce external helpers.
+  return String.raw`(() => {
+  const appOrigin = ${JSON.stringify(appOrigin)};
   let hooked;
   let lastSource = '';
   const source = value => {
@@ -48,4 +47,5 @@ function installOfflineBridge(appOrigin) {
     video.addEventListener('playing', nativeSource);
     nativeSource();
   });
+})();`;
 }
