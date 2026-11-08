@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "moviebulls",
+  "account_id": "652106bc1a96fff54b915424f7e9f14f",
+  "main": "cloudflare-entry.mjs",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "vars": { "NEXT_PUBLIC_PLAYER_ORIGIN": "https://moviebulls-player.moviebull.workers.dev" },
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "moviebulls" }],
+  "ratelimits": [{ "name": "APP_REQUESTS", "namespace_id": "802702", "simple": { "limit": 240, "period": 60 } }],
+  "observability": { "enabled": true, "head_sampling_rate": 0.05 }
+}

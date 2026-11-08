@@ -14,29 +14,30 @@ interface MovieCardProps {
   firstAirDate?: string;
   voteAverage: number;
   type: MediaType;
+  eager?: boolean;
+  href?: string;
+  subtitle?: string;
 }
 
-export function MovieCard({ id, title, posterPath, releaseDate, firstAirDate, voteAverage, type }: MovieCardProps) {
+export function MovieCard({ id, title, posterPath, releaseDate, firstAirDate, voteAverage, type, eager = false, href, subtitle }: MovieCardProps) {
   const { isInWatchlist, toggle } = useWatchlist();
   const inWatchlist = isInWatchlist(id, type);
   const poster = getPosterUrl(posterPath);
   const year = getYear(releaseDate || firstAirDate || "");
   const rating = formatVoteAverage(voteAverage);
-  const href = type === "movie" ? `/movie/${id}` : `/tv/${id}`;
+  const linkHref = href || (type === "movie" ? `/movie/${id}` : `/tv/${id}`);
 
   return (
-    <Link
-      href={href}
-      className="group relative flex h-full w-[160px] flex-shrink-0 flex-col sm:w-[180px]"
-      aria-label={`Open ${title}`}
-    >
+    <div className="group relative flex h-full w-full min-w-0 flex-col">
+      <Link href={linkHref} prefetch={false} className="flex h-full flex-col focus-visible:outline-2 focus-visible:outline-red" aria-label={`Open ${title}`}>
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-surface">
         {poster ? (
           <Image
             src={poster}
             alt={title}
             fill
-            sizes="(min-width: 640px) 180px, 160px"
+            loading={eager ? "eager" : "lazy"}
+            sizes="(min-width: 1280px) 230px, (min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
@@ -52,7 +53,6 @@ export function MovieCard({ id, title, posterPath, releaseDate, firstAirDate, vo
             {rating !== "N/A" && (
               <span className="text-gold text-sm font-semibold">★ {rating}</span>
             )}
-            <span className="text-xs bg-red px-2 py-0.5 rounded font-semibold">HD</span>
           </div>
         </div>
       </div>
@@ -60,17 +60,18 @@ export function MovieCard({ id, title, posterPath, releaseDate, firstAirDate, vo
         <h3 className="min-h-10 overflow-hidden text-sm font-semibold leading-5 text-text [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
           {title}
         </h3>
-        <p className={`mt-1 h-4 text-xs text-muted ${year ? "" : "opacity-0"}`} aria-hidden={!year}>
-          {year || "0000"}
+        <p className={`mt-1 h-4 truncate text-xs text-muted ${subtitle || year ? "" : "opacity-0"}`} aria-hidden={!subtitle && !year}>
+          {subtitle || year || "0000"}
         </p>
       </div>
+      </Link>
       <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+        type="button"
+        onClick={() => {
           toggle({ tmdb_id: id, type, title, poster_path: posterPath });
         }}
-        className="absolute top-2 right-2 z-10 rounded-full bg-black/50 p-1.5 opacity-0 transition-opacity duration-300 hover:bg-red group-hover:opacity-100 group-focus-within:opacity-100"
+        className="absolute top-2 right-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 opacity-100 transition-opacity duration-300 hover:bg-white/20 sm:opacity-0 sm:[@media(hover:none)]:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
+        aria-pressed={inWatchlist}
         aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
       >
         <svg
@@ -87,6 +88,6 @@ export function MovieCard({ id, title, posterPath, releaseDate, firstAirDate, vo
           />
         </svg>
       </button>
-    </Link>
+    </div>
   );
 }

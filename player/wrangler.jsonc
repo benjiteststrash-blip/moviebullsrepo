@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "moviebulls-player",
+  "account_id": "652106bc1a96fff54b915424f7e9f14f",
+  "main": "index.mjs",
+  "compatibility_date": "2026-10-23",
+  "workers_dev": true,
+  "vars": { "APP_ORIGIN": "https://moviebulls.moviebull.workers.dev" },
+  "ratelimits": [{ "name": "PLAYER_REQUESTS", "namespace_id": "802701", "simple": { "limit": 90, "period": 60 } }],
+  "observability": { "enabled": true, "head_sampling_rate": 0.05 }
+}

@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { fetchTrending, fetchPopular, fetchTopRated, fetchNowPlaying, fetchUpcoming, fetchDiscover } from "@/lib/tmdb";
+import { fetchTrending, fetchNowPlaying, fetchRecentMovies } from "@/lib/tmdb";
 import { HeroSection } from "@/components/home/HeroSection";
 import { MovieRow } from "@/components/home/MovieRow";
+import { MediaBrowser } from "@/components/shared/MediaBrowser";
+import { RecentlyWatched } from "@/components/home/RecentlyWatched";
 
 export const revalidate = 3600;
 
@@ -14,94 +16,50 @@ const HOME_NETWORKS = [
 ] as const;
 
 export default async function HomePage() {
-  const [
-    trendingMovieRes,
-    trendingTVRes,
-    popularRes,
-    topRatedRes,
-    nowPlayingRes,
-    upcomingRes,
-    ...networkResponses
-  ] =
-    await Promise.all([
-      fetchTrending("movie", "week"),
-      fetchTrending("tv", "week"),
-      fetchPopular("movie"),
-      fetchTopRated("movie"),
-      fetchNowPlaying(),
-      fetchUpcoming(),
-      ...HOME_NETWORKS.map((network) => fetchDiscover("tv", { with_networks: network.id })),
-    ]);
-
+  const [trendingMovieRes, trendingTVRes, nowPlayingRes, recentRes] = await Promise.all([
+    fetchTrending("movie", "week"),
+    fetchTrending("tv", "week"),
+    fetchNowPlaying(),
+    fetchRecentMovies(),
+  ]);
+  const today = new Date().toISOString().slice(0, 10);
   const trendingMovies = trendingMovieRes.results;
-  const trendingTV = trendingTVRes.results;
-  const popular = popularRes.results;
-  const topRated = topRatedRes.results;
-  const nowPlaying = nowPlayingRes.results;
-  const upcoming = upcomingRes.results;
-
-  const heroMovie = trendingMovies[0];
-  const hasContent = [
-    trendingMovies,
-    trendingTV,
-    popular,
-    topRated,
-    nowPlaying,
-    upcoming,
-  ].some((items) => items.length > 0);
+  const newReleases = nowPlayingRes.results
+    .filter((movie) => movie.release_date && movie.release_date <= today && movie.poster_path)
+    .sort((a, b) => b.release_date.localeCompare(a.release_date));
+  const heroMovie = trendingMovies.find((movie) => movie.backdrop_path && movie.release_date && movie.release_date <= today);
+  const hasContent = trendingMovies.length || trendingTVRes.results.length || newReleases.length || recentRes.results.length;
 
   return (
     <div>
+      <div className="h-20" aria-hidden="true" />
+      <RecentlyWatched />
       {heroMovie && <HeroSection movie={heroMovie} />}
       {!hasContent && (
-        <section className="mx-auto flex min-h-[70vh] max-w-3xl flex-col items-center justify-center px-4 pt-24 text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-red">Local setup needed</p>
-          <h1 className="font-[family-name:var(--font-syne)] text-3xl font-extrabold text-white sm:text-5xl">
-            Add your TMDB token to start streaming the catalog.
-          </h1>
-          <p className="mt-4 text-sm text-muted sm:text-base">
-            Create a <code className="rounded bg-white/10 px-1.5 py-0.5">.env.local</code> file with
-            <code className="ml-1 rounded bg-white/10 px-1.5 py-0.5">TMDB_API_KEY</code>, then restart the dev server.
-          </p>
+        <section className="mx-auto flex min-h-[60vh] max-w-3xl flex-col items-center justify-center px-4 pt-24 text-center">
+          <h1 className="text-3xl font-bold text-white">The catalogue is taking a moment.</h1>
+          <p className="mt-4 text-sm text-muted">Please refresh in a moment, or try searching for a title.</p>
+          <Link href="/search" className="mt-6 rounded-full bg-red px-6 py-3 font-semibold text-white">Search titles</Link>
         </section>
       )}
-      <div className="relative z-10 -mt-14 sm:-mt-20">
-        <MovieRow title="Trending Movies" items={trendingMovies} type="movie" />
-        <MovieRow title="Trending TV Shows" items={trendingTV} type="tv" />
-        <section className="mb-8 px-4 sm:px-6">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="font-[family-name:var(--font-syne)] text-xl font-bold text-white sm:text-2xl">
-              Streaming Categories
-            </h2>
-            <Link href="/networks" className="text-sm font-semibold text-muted transition-colors hover:text-white">
-              View all
-            </Link>
+      <div className={`relative z-10 mx-auto max-w-7xl ${heroMovie ? "-mt-10 sm:-mt-12" : "pt-24"}`}>
+        <MovieRow title="New releases" items={newReleases} type="movie" viewMoreHref="/movies?sort=now_playing" eager />
+        <MovieRow title="Trending movies this week" items={trendingMovies} type="movie" viewMoreHref="/movies?sort=trending" />
+        <MovieRow title="Trending TV shows" items={trendingTVRes.results} type="tv" viewMoreHref="/tv?sort=trending" />
+        <section className="mb-8 border-y border-border px-4 py-6 sm:px-6" aria-label="Browse by network">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-muted">Browse by network</h2>
+            <Link href="/networks" className="flex min-h-11 items-center text-sm font-semibold text-white hover:text-red">View all</Link>
           </div>
-          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {HOME_NETWORKS.map((network) => (
-              <Link
-                key={network.id}
-                href={`/network/${network.id}`}
-                className="snap-start rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-red hover:bg-white/5"
-              >
+              <Link key={network.id} href={`/network/${network.id}`} className="flex min-h-11 shrink-0 items-center rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-red">
                 {network.name}
               </Link>
             ))}
           </div>
         </section>
-        {HOME_NETWORKS.map((network, index) => (
-          <MovieRow
-            key={network.id}
-            title={`${network.name} Shows`}
-            items={networkResponses[index]?.results || []}
-            type="tv"
-            viewMoreHref={`/network/${network.id}`}
-          />
-        ))}
-        <MovieRow title="Popular Movies" items={popular} type="movie" />
-        <MovieRow title="Top Rated All Time" items={topRated} type="movie" />
-        <MovieRow title="Now Playing in Cinemas" items={nowPlaying} type="movie" />
-        <MovieRow title="Coming Soon" items={upcoming} type="movie" />
+        <MediaBrowser type="movie" title="For you" subtitle="New releases and popular picks, with more to explore as you scroll." initialMode="recent" initialData={recentRes.total_pages ? recentRes : undefined} embedded />
       </div>
     </div>
   );

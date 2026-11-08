@@ -15,7 +15,7 @@ export function HeroSection({ movie }: HeroSectionProps) {
   const rating = formatVoteAverage(movie.vote_average);
 
   return (
-    <section className="relative h-screen min-h-[640px] w-full overflow-hidden">
+    <section className="relative min-h-[340px] w-full overflow-hidden sm:min-h-[400px]">
       {backdrop && (
         <Image
           src={backdrop}
@@ -28,9 +28,10 @@ export function HeroSection({ movie }: HeroSectionProps) {
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent" />
-      <div className="absolute bottom-24 left-0 right-0 max-w-3xl p-6 sm:bottom-28 sm:p-12 lg:bottom-32">
+      <div className="relative mx-auto w-full max-w-7xl px-4 pb-20 pt-10 sm:px-6 sm:pb-24 sm:pt-14">
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-red">Trending this week</p>
         <h1 className="mb-4 font-[family-name:var(--font-syne)] text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl">
-          {movie.title}
+          <span className="line-clamp-2 max-w-3xl text-balance">{movie.title}</span>
         </h1>
         {movie.tagline && (
           <p className="text-lg text-muted italic mb-3">{movie.tagline}</p>
@@ -38,7 +39,7 @@ export function HeroSection({ movie }: HeroSectionProps) {
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted mb-4">
           {year && <span>{year}</span>}
           {movie.runtime > 0 && <span>{formatRuntime(movie.runtime)}</span>}
-          <span className="text-gold font-semibold">★ {rating}</span>
+          {rating !== "N/A" && <span className="text-gold font-semibold">★ {rating}</span>}
           {movie.genres?.slice(0, 3).map((g) => (
             <span key={g.id} className="px-3 py-0.5 bg-white/10 rounded-full text-xs">
               {g.name}
@@ -59,10 +60,10 @@ export function HeroSection({ movie }: HeroSectionProps) {
             Watch Now
           </Link>
           <Link
-            href={`/movie/${movie.id}`}
+            href="/movies"
             className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full transition-colors text-sm"
           >
-            More Info
+            Explore new movies
           </Link>
         </div>
       </div>

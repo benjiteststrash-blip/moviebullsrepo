@@ -7,9 +7,10 @@ interface MovieRowProps {
   items: (TMDBMovie | TMDBTVShow)[];
   type: MediaType;
   viewMoreHref?: string;
+  eager?: boolean;
 }
 
-export function MovieRow({ title, items, type, viewMoreHref }: MovieRowProps) {
+export function MovieRow({ title, items, type, viewMoreHref, eager = false }: MovieRowProps) {
   if (!items?.length) return null;
 
   return (
@@ -21,14 +22,14 @@ export function MovieRow({ title, items, type, viewMoreHref }: MovieRowProps) {
         {viewMoreHref && (
           <Link
             href={viewMoreHref}
-            className="shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-red hover:bg-white/5 sm:text-sm"
+            className="flex min-h-11 shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-red hover:bg-white/5 sm:text-sm"
           >
             View more
           </Link>
         )}
       </div>
-      <div className="flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-4 pb-4 sm:px-6 scrollbar-none">
-        {items.map((item) => {
+      <div className="flex snap-x snap-mandatory scroll-px-4 items-stretch gap-3 overflow-x-auto px-4 pb-4 sm:scroll-px-6 sm:px-6 scrollbar-none">
+        {items.map((item, index) => {
           const id = item.id;
           const title = "title" in item ? item.title : item.name;
           const posterPath = item.poster_path;
@@ -37,7 +38,7 @@ export function MovieRow({ title, items, type, viewMoreHref }: MovieRowProps) {
           const voteAverage = item.vote_average;
 
           return (
-            <div key={id} className="snap-start">
+            <div key={id} className="w-[144px] shrink-0 snap-start sm:w-[180px]">
               <MovieCard
                 id={id}
                 title={title}
@@ -46,6 +47,7 @@ export function MovieRow({ title, items, type, viewMoreHref }: MovieRowProps) {
                 firstAirDate={firstAirDate}
                 voteAverage={voteAverage}
                 type={type}
+                eager={eager && index < 4}
               />
             </div>
           );

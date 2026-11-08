@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { fetchSearch } from "@/lib/tmdb";
 import { MovieCard } from "@/components/shared/MovieCard";
 import { rankSearchResults } from "@/lib/searchRank";
+import { ScrollLoader } from "@/components/shared/ScrollLoader";
+import { useInfiniteMedia } from "@/hooks/useInfiniteMedia";
 import type { TMDBMultiSearchResult } from "@/types/tmdb";
 
 function isMediaResult(result: TMDBMultiSearchResult): result is TMDBMultiSearchResult & {
@@ -13,76 +15,23 @@ function isMediaResult(result: TMDBMultiSearchResult): result is TMDBMultiSearch
   return result.media_type === "movie" || result.media_type === "tv";
 }
 
+function resultKey(item: TMDBMultiSearchResult) { return `${item.media_type}-${item.id}`; }
+
 export function SearchClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const urlQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(urlQuery);
-  const [results, setResults] = useState<TMDBMultiSearchResult[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(urlQuery.trim());
 
   const trimmedQuery = useMemo(() => query.trim(), [query]);
 
-  const runSearch = useCallback(async (value: string) => {
-    const nextQuery = value.trim();
-
-    if (!nextQuery) {
-      setResults([]);
-      setPage(1);
-      setTotalPages(1);
-      setSearched(false);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setSearched(true);
-
-    try {
-      const first = await fetchSearch(nextQuery, 1);
-      const pagesToPreload = Math.min(first.total_pages, 3);
-      const rest = pagesToPreload > 1
-        ? await Promise.all(Array.from({ length: pagesToPreload - 1 }, (_, index) => fetchSearch(nextQuery, index + 2)))
-        : [];
-      const allResults = [first, ...rest].flatMap((item) => item.results).filter(isMediaResult);
-      setResults(rankSearchResults(nextQuery, allResults));
-      setPage(pagesToPreload || 1);
-      setTotalPages(first.total_pages);
-    } catch {
-      setResults([]);
-      setPage(1);
-      setTotalPages(1);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const loadMore = async () => {
-    if (!trimmedQuery || loadingMore || page >= totalPages) return;
-
-    setLoadingMore(true);
-    const nextPage = page + 1;
-
-    try {
-      const data = await fetchSearch(trimmedQuery, nextPage);
-      const nextResults = data.results.filter(isMediaResult);
-      setResults((current) => {
-        const seen = new Set(current.map((item) => `${item.media_type}-${item.id}`));
-        return rankSearchResults(trimmedQuery, [
-          ...current,
-          ...nextResults.filter((item) => !seen.has(`${item.media_type}-${item.id}`)),
-        ]);
-      });
-      setPage(nextPage);
-      setTotalPages(data.total_pages);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
+  const loadPage = useCallback(async (page: number) => {
+    if (!searchQuery) return { page: 1, results: [], total_pages: 0, total_results: 0 };
+    const data = await fetchSearch(searchQuery, page);
+    return { ...data, results: rankSearchResults(searchQuery, data.results.filter(isMediaResult)) };
+  }, [searchQuery]);
+  const { items: results, loading, error, hasMore, loadMore } = useInfiniteMedia(loadPage, resultKey);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setQuery(urlQuery), 0);
@@ -93,11 +42,11 @@ export function SearchClient() {
     const timer = window.setTimeout(() => {
       const nextUrl = trimmedQuery ? `/search?q=${encodeURIComponent(trimmedQuery)}` : "/search";
       router.replace(nextUrl, { scroll: false });
-      runSearch(trimmedQuery);
+      setSearchQuery(trimmedQuery);
     }, 300);
 
     return () => window.clearTimeout(timer);
-  }, [router, runSearch, trimmedQuery]);
+  }, [router, trimmedQuery]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6">
@@ -107,6 +56,7 @@ export function SearchClient() {
         <div className="relative max-w-xl">
           <input
             type="search"
+            aria-label="Search movies and TV shows"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search movies & TV shows..."
@@ -124,20 +74,20 @@ export function SearchClient() {
         </div>
       </div>
 
-      {loading ? (
+      {loading && results.length === 0 && searchQuery ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {Array.from({ length: 10 }).map((_, index) => (
             <div key={index} className="aspect-[2/3] animate-pulse rounded-lg bg-surface" />
           ))}
         </div>
-      ) : searched && results.length === 0 ? (
+      ) : searchQuery && !loading && !error && results.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-lg text-muted">No results for &ldquo;{trimmedQuery}&rdquo;</p>
+          <p className="text-lg text-muted">No results for &ldquo;{searchQuery}&rdquo;</p>
           <p className="mt-2 text-sm text-muted">Try a different search term</p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" aria-busy={loading}>
             {results.filter(isMediaResult).map((item) => {
               const title = item.media_type === "movie" ? item.title || "Untitled movie" : item.name || "Untitled show";
               const releaseDate = item.media_type === "movie" ? item.release_date : undefined;
@@ -157,20 +107,9 @@ export function SearchClient() {
               );
             })}
           </div>
-          {page < totalPages && (
-            <div className="mt-8 flex justify-center">
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="rounded-lg bg-red px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-hover disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loadingMore ? "Loading..." : "Load More Results"}
-              </button>
-            </div>
-          )}
         </>
       )}
+      {searchQuery && <ScrollLoader hasMore={hasMore} loading={loading || trimmedQuery !== searchQuery} error={error} onLoadMore={loadMore} />}
     </div>
   );
 }

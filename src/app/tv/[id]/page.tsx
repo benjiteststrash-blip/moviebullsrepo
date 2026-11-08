@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { fetchTVDetails } from "@/lib/tmdb";
 import { getPosterUrl, getBackdropUrl, getYear, formatVoteAverage } from "@/lib/utils";
-import { AdBanner } from "@/components/ads/AdBanner";
 import { MovieCard } from "@/components/shared/MovieCard";
 import { WatchlistButton } from "@/components/shared/WatchlistButton";
 import { RecentlyViewedRecorder } from "@/components/shared/RecentlyViewedRecorder";
@@ -118,7 +117,6 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
         </div>
 
         <div className="mt-10">
-          <AdBanner variant="leaderboard" />
         </div>
 
         {seasons.length > 0 && (
@@ -129,13 +127,12 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
         )}
 
         <div className="mt-8">
-          <AdBanner variant="rectangle" />
         </div>
 
         {tv.similar?.results?.length > 0 && (
           <div className="mt-12">
             <h2 className="font-[family-name:var(--font-syne)] text-xl font-bold text-white mb-4">Similar Shows</h2>
-            <div className="flex gap-3 overflow-x-auto pb-4">
+            <div className="flex gap-3 overflow-x-auto pb-4 [&>div]:w-[160px] [&>div]:shrink-0 sm:[&>div]:w-[180px]">
               {tv.similar.results.slice(0, 10).map((s) => (
                 <MovieCard
                   key={s.id}

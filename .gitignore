@@ -41,3 +41,10 @@ streamsite-*.png
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.open-next/
+.wrangler/
+.dev.vars*
+player/worker-configuration.d.ts
+cloudflare-env.d.ts
+
+/.backups/

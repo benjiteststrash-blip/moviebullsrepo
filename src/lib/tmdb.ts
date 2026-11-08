@@ -160,6 +160,24 @@ export function fetchDiscover(
   return tmdbPaginatedFetch<TMDBMovie | TMDBTVShow>(`/discover/${type}`, cleanParams);
 }
 
+export function getRecentMovieParams() {
+  const now = new Date();
+  const since = new Date(now);
+  since.setUTCDate(since.getUTCDate() - 183);
+  return {
+    sort_by: "popularity.desc",
+    "primary_release_date.gte": since.toISOString().slice(0, 10),
+    "primary_release_date.lte": now.toISOString().slice(0, 10),
+    "vote_count.gte": 5,
+    include_adult: "false",
+    include_video: "false",
+  };
+}
+
+export function fetchRecentMovies(page = 1) {
+  return fetchDiscover("movie", { ...getRecentMovieParams(), page });
+}
+
 export function fetchOnTheAir(page = 1) {
   return tmdbPaginatedFetch<TMDBTVShow>(`/tv/on_the_air`, { page: String(page) });
 }

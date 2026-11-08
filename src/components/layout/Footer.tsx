@@ -10,6 +10,7 @@ export function Footer() {
             <span className="text-white">bulls</span>
           </Link>
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
+            <Link href="/install" className="hover:text-white transition-colors">Install app</Link>
             <Link href="/" className="hover:text-white transition-colors">DMCA</Link>
             <Link href="/" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/" className="hover:text-white transition-colors">Contact</Link>

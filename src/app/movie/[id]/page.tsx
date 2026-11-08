@@ -3,7 +3,6 @@ import { fetchMovieDetails } from "@/lib/tmdb";
 import { getPosterUrl, getBackdropUrl, getYear, formatRuntime, formatVoteAverage } from "@/lib/utils";
 import { MovieCard } from "@/components/shared/MovieCard";
 import { VideoPlayer } from "@/components/player/VideoPlayer";
-import { AdBanner } from "@/components/ads/AdBanner";
 import { WatchlistButton } from "@/components/shared/WatchlistButton";
 import { RecentlyViewedRecorder } from "@/components/shared/RecentlyViewedRecorder";
 
@@ -121,16 +120,14 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="mt-10">
-          <AdBanner variant="leaderboard" />
         </div>
 
         <div className="mt-8">
           <h2 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white mb-4">Watch Now</h2>
-          <VideoPlayer tmdb={movie.id} type="movie" title={movie.title} />
+          <VideoPlayer tmdb={movie.id} type="movie" title={movie.title} posterPath={movie.poster_path} />
         </div>
 
         <div className="mt-8">
-          <AdBanner variant="rectangle" />
         </div>
 
         {movie.similar?.results?.length > 0 && (
@@ -138,7 +135,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             <h2 className="font-[family-name:var(--font-syne)] text-xl font-bold text-white mb-4">
               Similar Movies
             </h2>
-            <div className="flex gap-3 overflow-x-auto pb-4">
+            <div className="flex gap-3 overflow-x-auto pb-4 [&>div]:w-[160px] [&>div]:shrink-0 sm:[&>div]:w-[180px]">
               {movie.similar.results.slice(0, 10).map((s) => (
                 <MovieCard
                   key={s.id}

@@ -1,11 +1,18 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MOVIE_SOURCES, TV_SOURCES } from '@/lib/sources';
+import { recordRecentlyWatched } from '@/hooks/useRecentlyWatched';
 
-export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, title }) {
+/** @param {{tmdb: number, type?: 'movie' | 'tv', season?: number, episode?: number, title?: string, posterPath?: string | null, historyTitle?: string}} props */
+export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, title, posterPath = null, historyTitle = '' }) {
   const [started, setStarted] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+  const [playerError, setPlayerError] = useState('');
+  const iframeRef = useRef(null);
+  const recordedRef = useRef(false);
+  const playerOrigin = process.env.NEXT_PUBLIC_PLAYER_ORIGIN?.replace(/\/$/, '');
 
   const source = useMemo(() => {
     const sourceList = type === 'movie' ? MOVIE_SOURCES : TV_SOURCES;
@@ -17,16 +24,44 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
     return { ...selected, url };
   }, [episode, season, tmdb, type]);
 
-  const playerUrl = `/api/player-proxy?url=${encodeURIComponent(source.url)}&preserveLocation=1&blocker=1`;
+  const playerUrl = playerOrigin ? `${playerOrigin}${source.url}` : '';
+
+  useEffect(() => {
+    if (!started || !playerOrigin) return;
+    const receive = (event) => {
+      if (event.origin !== playerOrigin || event.source !== iframeRef.current?.contentWindow || event.data?.type !== 'moviebulls-player') return;
+      if (event.data.state === 'playing' && !recordedRef.current) {
+        recordedRef.current = true;
+        recordRecentlyWatched({ tmdb_id: tmdb, type, title: historyTitle || title || (type === 'movie' ? 'Movie' : 'TV show'), poster_path: posterPath, ...(type === 'tv' ? { season, episode } : {}) });
+      }
+      if (['ready', 'playing', 'unavailable'].includes(event.data.state)) clearTimeout(timeout);
+      if (event.data.state === 'unavailable') {
+        setIframeLoading(false);
+        setPlayerError('This title is temporarily unavailable. Please try again.');
+      } else if (['ready', 'playing'].includes(event.data.state)) {
+        setIframeLoading(false);
+        setPlayerError('');
+      }
+    };
+    window.addEventListener('message', receive);
+    const timeout = setTimeout(() => {
+      setIframeLoading(false);
+      setPlayerError('The player is taking longer than usual. You can try loading it again.');
+    }, 45000);
+    return () => { window.removeEventListener('message', receive); clearTimeout(timeout); };
+  }, [started, playerOrigin, playerUrl, attempt, tmdb, type, title, historyTitle, posterPath, season, episode]);
 
   const handleStartPlayer = useCallback(() => {
+    recordedRef.current = false;
     setStarted(true);
     setIframeLoading(true);
+    setPlayerError('');
+    setAttempt(value => value + 1);
   }, []);
 
   return (
     <div className="w-full">
-      {!started ? (
+      {!started || !playerUrl ? (
         <div className="flex aspect-video w-full flex-col items-center justify-center rounded-lg border border-border bg-surface px-6 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red text-white">
             <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -40,9 +75,10 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
           <button
             type="button"
             onClick={handleStartPlayer}
+            disabled={!playerUrl}
             className="mt-5 rounded-lg bg-red px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-hover"
           >
-            Start Player
+            {playerUrl ? 'Start Player' : 'Player temporarily unavailable'}
           </button>
         </div>
       ) : (
@@ -51,16 +87,16 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
             <span className="rounded-lg bg-red px-3 py-2 text-sm font-medium text-white">
               {source.name}
             </span>
-            <span className="text-xs text-muted">Protected</span>
+            <button type="button" onClick={handleStartPlayer} className="rounded-lg px-3 py-2 text-sm text-muted hover:text-white">Reload player</button>
           </div>
 
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
             <iframe
-              key={playerUrl}
+              key={`${playerUrl}:${attempt}`}
+              ref={iframeRef}
               src={playerUrl}
               title={`${type === 'movie' ? 'Movie' : 'Episode'} player via ${source.name}`}
               className="absolute inset-0 h-full w-full"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-presentation allow-popups"
               allowFullScreen
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
               referrerPolicy="origin"
@@ -74,6 +110,7 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
               </div>
             )}
           </div>
+          {playerError && <p role="status" className="mt-3 text-sm text-muted">{playerError}</p>}
         </>
       )}
     </div>
