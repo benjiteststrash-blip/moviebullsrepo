@@ -12,10 +12,16 @@
     "preview:cloudflare": "opennextjs-cloudflare preview",
     "deploy:player": "wrangler deploy --config player/wrangler.jsonc --profile moviebulls",
     "deploy": "npm run build:cloudflare && wrangler deploy --profile moviebulls",
-    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts && wrangler types --config player/wrangler.jsonc --env-interface PlayerEnv player/worker-configuration.d.ts"
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts && wrangler types --config player/wrangler.jsonc --env-interface PlayerEnv player/worker-configuration.d.ts",
+    "prepare:offline": "node scripts/prepare-offline.mjs",
+    "predev": "npm run prepare:offline",
+    "prebuild": "npm run prepare:offline",
+    "prebuild:cloudflare": "npm run prepare:offline",
+    "test:offline": "node --test tests/offline.test.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.13",
+    "hls.js": "1.7.4",
     "next": "16.4.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"

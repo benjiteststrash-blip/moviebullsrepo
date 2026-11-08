@@ -52,6 +52,7 @@ export function Navbar() {
           <Link href="/my-list" className="text-sm text-muted hover:text-white transition-colors">
             My List
           </Link>
+          <a href="/downloads.html" className="text-sm text-muted hover:text-white transition-colors">Downloads</a>
           <Link href="/random" className="text-sm text-muted hover:text-white transition-colors">
             Random
           </Link>
@@ -122,6 +123,7 @@ export function Navbar() {
           <Link href="/random" onClick={() => setMobileOpen(false)} className="block text-sm text-muted hover:text-white">
             Random
           </Link>
+          <a href="/downloads.html" onClick={() => setMobileOpen(false)} className="block text-sm text-muted hover:text-white">Downloads</a>
           <div className="pt-2 border-t border-border">
             <p className="text-xs text-muted mb-2 font-semibold">Genres</p>
             <div className="grid grid-cols-2 gap-1">

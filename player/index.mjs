@@ -1,4 +1,5 @@
 import {API_PATHS, EMBED_PATH, PROVIDER_ORIGIN, preparePlayerHtml, readLimited, validApiQuery} from './filter.mjs';
+import {offlineBridge} from './offline-bridge.mjs';
 
 function originOf(value) { try { return new URL(value).origin; } catch { return ''; } }
 function errorResponse(message, status = 502) {
@@ -6,6 +7,7 @@ function errorResponse(message, status = 502) {
 }
 function bootstrap(appOrigin) {
   return `<script>(()=>{
+    ${offlineBridge(appOrigin)}
     const send=state=>parent.postMessage({type:'moviebulls-player',state},${JSON.stringify(appOrigin)});
     Object.defineProperty(window,'open',{value:()=>null,writable:false,configurable:false});
     document.addEventListener('click',event=>{

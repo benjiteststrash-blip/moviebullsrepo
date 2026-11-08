@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     ".open-next/**",
     ".wrangler/**",
     ".backups/**",
+    "public/offline/hls.min.js",
     "player/.wrangler/**",
     "cloudflare-env.d.ts",
     "player/worker-configuration.d.ts",

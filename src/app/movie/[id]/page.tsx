@@ -124,7 +124,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
 
         <div className="mt-8">
           <h2 className="font-[family-name:var(--font-syne)] text-2xl font-bold text-white mb-4">Watch Now</h2>
-          <VideoPlayer tmdb={movie.id} type="movie" title={movie.title} posterPath={movie.poster_path} />
+          <VideoPlayer key={movie.id} tmdb={movie.id} type="movie" title={movie.title} posterPath={movie.poster_path} />
         </div>
 
         <div className="mt-8">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MOVIE_SOURCES, TV_SOURCES } from '@/lib/sources';
 import { recordRecentlyWatched } from '@/hooks/useRecentlyWatched';
+import { OfflineDownload } from './OfflineDownload';
 
 /** @param {{tmdb: number, type?: 'movie' | 'tv', season?: number, episode?: number, title?: string, posterPath?: string | null, historyTitle?: string}} props */
 export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, title, posterPath = null, historyTitle = '' }) {
@@ -10,6 +11,7 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
   const [iframeLoading, setIframeLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [playerError, setPlayerError] = useState('');
+  const [offlineSource, setOfflineSource] = useState('');
   const iframeRef = useRef(null);
   const recordedRef = useRef(false);
   const playerOrigin = process.env.NEXT_PUBLIC_PLAYER_ORIGIN?.replace(/\/$/, '');
@@ -30,12 +32,20 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
     if (!started || !playerOrigin) return;
     const receive = (event) => {
       if (event.origin !== playerOrigin || event.source !== iframeRef.current?.contentWindow || event.data?.type !== 'moviebulls-player') return;
+      if (event.data.state === 'source') {
+        try {
+          const url = new URL(event.data.url);
+          if (url.protocol === 'https:' && !url.username && !url.password && url.href.length <= 16000) setOfflineSource(url.href);
+        } catch { /* Ignore invalid source messages. */ }
+        return;
+      }
       if (event.data.state === 'playing' && !recordedRef.current) {
         recordedRef.current = true;
         recordRecentlyWatched({ tmdb_id: tmdb, type, title: historyTitle || title || (type === 'movie' ? 'Movie' : 'TV show'), poster_path: posterPath, ...(type === 'tv' ? { season, episode } : {}) });
       }
       if (['ready', 'playing', 'unavailable'].includes(event.data.state)) clearTimeout(timeout);
       if (event.data.state === 'unavailable') {
+        setOfflineSource('');
         setIframeLoading(false);
         setPlayerError('This title is temporarily unavailable. Please try again.');
       } else if (['ready', 'playing'].includes(event.data.state)) {
@@ -56,6 +66,7 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
     setStarted(true);
     setIframeLoading(true);
     setPlayerError('');
+    setOfflineSource('');
     setAttempt(value => value + 1);
   }, []);
 
@@ -113,6 +124,7 @@ export function VideoPlayer({ tmdb, type = 'movie', season = 1, episode = 1, tit
           {playerError && <p role="status" className="mt-3 text-sm text-muted">{playerError}</p>}
         </>
       )}
+      <OfflineDownload sourceUrl={offlineSource} id={type === 'movie' ? `movie-${tmdb}` : `tv-${tmdb}-${season}-${episode}`} title={title || historyTitle || (type === 'movie' ? 'Movie' : `Episode ${episode}`)} />
     </div>
   );
 }

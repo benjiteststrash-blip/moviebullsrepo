@@ -48,3 +48,6 @@ player/worker-configuration.d.ts
 cloudflare-env.d.ts
 
 /.backups/
+
+/public/offline/hls.min.js
+/public/offline/hls-LICENSE.txt
